@@ -2,6 +2,7 @@
 
 const canvas = document.getElementById("canvas");
 const context = canvas.getContext("2d");
+context.font = "20px sans-serif"
 
 const TILE_SIZE = 20;
 const FIELD_SIZE = 20;
@@ -48,10 +49,10 @@ function drawApple(position) {
 }
 
 const directions = Object.freeze({
-    right: {x: 1, y: 0, keyCode: "ArrowRight", order: 0},
-    up: {x: 0, y: -1, keyCode: "ArrowUp", order: 1},
-    left: {x: -1, y: 0, keyCode: "ArrowLeft", order: 2},
-    down: {x: 0, y: 1, keyCode: "ArrowDown", order: 3},
+    right: {x: 1, y: 0, keyCode: "ArrowRight", value: 0},
+    up: {x: 0, y: -1, keyCode: "ArrowUp", value: 1},
+    left: {x: -1, y: 0, keyCode: "ArrowLeft", value: 2},
+    down: {x: 0, y: 1, keyCode: "ArrowDown", value: 3},
 });
 
 const keyCodeToDirection = Object.freeze({
@@ -121,9 +122,9 @@ class Snake {
     }
 }
 
-function resetScreen() {
-    context.fillStyle = "white";
-    context.fillRect(0, 0, 400, 400);
+function clearScreen() {
+    context.fillStyle = "dimgray";
+    context.fillRect(0, 0, 400, 440);
     context.fillStyle = "black";
     context.fillRect(10, 10, 380, 380);
 }
@@ -134,9 +135,11 @@ class Game {
     #snake;
     #apples;
     #direction;
+    #nextdirection;
     #intervalId;
     #boundKeyListener;
     #score;
+    #scoreIndicatorPosition;
 
     constructor() {
         this.#width = 19;
@@ -147,11 +150,13 @@ class Game {
         this.#snake = new Snake(new Position(9, 9), new Position(9, 10));
         this.#apples = [];
         this.#direction = directions.up;
+        this.#nextdirection = directions.up;
         this.#boundKeyListener = this.keyListener.bind(this);
         document.body.addEventListener("keydown", this.#boundKeyListener);
-        this.#intervalId = setInterval(this.update.bind(this), 200);
+        this.#intervalId = setInterval(this.update.bind(this), 300);
         this.spawnApple();
         this.#score = 0;
+        this.#scoreIndicatorPosition = new Position(1, this.#height + 1);
         this.draw();
     }
 
@@ -172,11 +177,15 @@ class Game {
     }
 
     draw() {
-        resetScreen();
+        clearScreen();
         this.#snake.draw();
         for (const apple of this.#apples) {
             drawApple(apple, "red");
         }
+        drawApple(this.#scoreIndicatorPosition);
+        context.fillStyle = "white";
+        context.fillText(`${this.#score}`, 60, 427);
+        // context.fillRect(60, 410, 100, 20);
     }
 
     isOutOfBorder(position) {
@@ -185,6 +194,7 @@ class Game {
     }
 
     update() {
+        this.#direction = this.#nextdirection;
         const nextHeadPosition = this.#snake.getHeadPosition().copy().move(this.#direction);
         if (this.#snake.containsBody(nextHeadPosition)) {
             this.gameOver();
@@ -218,10 +228,10 @@ class Game {
             return;
         }
         const direction = keyCodeToDirection[keyCode];
-        if (Math.abs(direction.order - this.#direction.order) % 4 == 2) {
+        if (Math.abs(direction.value - this.#direction.value) % 4 == 2) {
             return;
         }
-        this.#direction = direction;
+        this.#nextdirection = direction;
     }
 
     gameOver() {
